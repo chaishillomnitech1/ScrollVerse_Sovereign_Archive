@@ -9,10 +9,18 @@ on:
     types:
       - completed
 
+permissions:
+  contents: read
+  actions: read
+  issues: write  # Required for creating issues on failure
+
 jobs:
   check-integrity:
     name: Long-term Integrity Check
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     
     steps:
       - name: Checkout repository
@@ -137,6 +145,9 @@ jobs:
     name: Workflow Status Notification
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_run'
+    permissions:
+      issues: write  # Required for creating issues
+      contents: read
     
     steps:
       - name: Check workflow status
@@ -221,6 +232,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: check-integrity
     if: always()
+    permissions:
+      contents: read
     
     steps:
       - name: Create notification summary

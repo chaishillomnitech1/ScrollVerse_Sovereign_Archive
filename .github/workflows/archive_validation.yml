@@ -14,10 +14,18 @@ on:
       - 'protocols/**'
       - 'logs/**'
 
+permissions:
+  contents: write  # Required for commit updates
+  actions: read
+  pull-requests: read
+
 jobs:
   validate-checksums:
     name: Validate File Checksums
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for committing checksums
+      actions: read
     
     steps:
       - name: Checkout repository
@@ -136,6 +144,9 @@ jobs:
   validate-metadata:
     name: Validate Asset Metadata
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
     
     steps:
       - name: Checkout repository
@@ -208,6 +219,9 @@ jobs:
     name: Sovereign Protocol Compliance
     runs-on: ubuntu-latest
     needs: [validate-checksums, validate-metadata]
+    permissions:
+      contents: read
+      actions: read
     
     steps:
       - name: Checkout repository

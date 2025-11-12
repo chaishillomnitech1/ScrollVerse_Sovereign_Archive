@@ -18,10 +18,17 @@ on:
           - comprehensive
           - security
 
+permissions:
+  contents: write  # Required for committing audit reports
+  actions: read
+  issues: write  # Required for creating issues on failure
+
 jobs:
   audit-preparation:
     name: Audit Preparation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     outputs:
       audit_id: ${{ steps.generate.outputs.audit_id }}
@@ -44,6 +51,9 @@ jobs:
     name: Repository Structure Audit
     runs-on: ubuntu-latest
     needs: audit-preparation
+    permissions:
+      contents: read
+      actions: read
     
     steps:
       - name: Checkout repository
@@ -110,6 +120,9 @@ jobs:
     name: Security Audit
     runs-on: ubuntu-latest
     needs: audit-preparation
+    permissions:
+      contents: read
+      actions: read
     
     steps:
       - name: Checkout repository
@@ -240,6 +253,9 @@ jobs:
     name: Protocol Compliance Audit
     runs-on: ubuntu-latest
     needs: audit-preparation
+    permissions:
+      contents: read
+      actions: read
     
     steps:
       - name: Checkout repository
@@ -371,6 +387,9 @@ jobs:
     name: Generate Audit Summary
     runs-on: ubuntu-latest
     needs: [audit-preparation, repository-audit, security-audit, compliance-audit]
+    permissions:
+      contents: write  # Required for committing audit reports
+      issues: write  # Required for creating issues on failure
     
     steps:
       - name: Checkout repository
