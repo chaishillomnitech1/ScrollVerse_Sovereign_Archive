@@ -1,1 +1,12 @@
-{\n  "Heir Access Protocol": {\n    "description": "Establishes a mechanism for controlled data access for heirs, ensuring continuity of data sharing.",\n    "status": "enabled",\n    "protocol_version": "1.0"\n  },\n  "Bi-directional Data Flow Protocol": {\n    "description": "Facilitates mutual data exchange between nodes for improved real-time updates.",\n    "status": "enabled",\n    "protocol_version": "1.0"\n  }\n}
+{
+  "Heir Access Protocol": {
+    "description": "Establishes a mechanism for controlled data access for heirs, ensuring continuity of data sharing.",
+    "status": "enabled",
+    "protocol_version": "1.0"
+  },
+  "Bi-directional Data Flow Protocol": {
+    "description": "Facilitates mutual data exchange between nodes for improved real-time updates.",
+    "status": "enabled",
+    "protocol_version": "1.0"
+  }
+}
