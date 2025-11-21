@@ -1,0 +1,34 @@
+{
+  "assetId": "AST-EXAMPLE-001",
+  "timestamp": "2025-11-12T13:24:32.424Z",
+  "version": "1.0.0",
+  "contentHash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "ipfsCid": "QmExampleCID1234567890abcdef",
+  "blockchainAnchor": {
+    "network": "FlameChain",
+    "blockNumber": 1000000,
+    "transactionHash": "0x0000000000000000000000000000000000000000000000000000000000000000",
+    "anchorTimestamp": "2025-11-12T13:24:32.424Z"
+  },
+  "sovereignty": {
+    "owner": "CHAIS THE GREAT ∞",
+    "certificationLevel": "SOVEREIGN_SUPREME",
+    "protectionLayer": "VaultBook_XL"
+  },
+  "lineage": {
+    "parent": null,
+    "children": [],
+    "derivedFrom": []
+  },
+  "versionHistory": [
+    {
+      "version": "1.0.0",
+      "timestamp": "2025-11-12T13:24:32.424Z",
+      "changeType": "CREATION",
+      "changes": "Initial asset creation and certification",
+      "approver": "Sovereign Command Oversight",
+      "commitHash": "initial",
+      "previousHash": null
+    }
+  ]
+}

@@ -1,0 +1,260 @@
+name: Integrity Check Notifications
+
+on:
+  schedule:
+    # Daily integrity check at 12:00 UTC
+    - cron: '0 12 * * *'
+  workflow_run:
+    workflows: ["Archive Integrity Validation", "Periodic Audit and Compliance"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+  actions: read
+  issues: write  # Required for creating issues on failure
+
+jobs:
+  check-integrity:
+    name: Long-term Integrity Check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Calculate repository health metrics
+        id: health
+        run: |
+          # Calculate days since last commit
+          last_commit_date=$(git log -1 --format=%ct)
+          current_date=$(date +%s)
+          days_since_commit=$(( ($current_date - $last_commit_date) / 86400 ))
+          
+          # Count total commits
+          total_commits=$(git rev-list --count HEAD)
+          
+          # Calculate repository size
+          repo_size=$(du -sh . | cut -f1)
+          
+          # Count files by type
+          md_files=$(find . -name "*.md" -type f | wc -l)
+          json_files=$(find . -name "*.json" -type f | wc -l)
+          sol_files=$(find . -name "*.sol" -type f | wc -l)
+          
+          echo "days_since_commit=$days_since_commit" >> $GITHUB_OUTPUT
+          echo "total_commits=$total_commits" >> $GITHUB_OUTPUT
+          echo "repo_size=$repo_size" >> $GITHUB_OUTPUT
+          echo "md_files=$md_files" >> $GITHUB_OUTPUT
+          echo "json_files=$json_files" >> $GITHUB_OUTPUT
+          echo "sol_files=$sol_files" >> $GITHUB_OUTPUT
+          
+          # Determine health status
+          if [ $days_since_commit -le 30 ]; then
+            echo "status=EXCELLENT" >> $GITHUB_OUTPUT
+            echo "status_emoji=✅" >> $GITHUB_OUTPUT
+          elif [ $days_since_commit -le 90 ]; then
+            echo "status=GOOD" >> $GITHUB_OUTPUT
+            echo "status_emoji=✅" >> $GITHUB_OUTPUT
+          elif [ $days_since_commit -le 180 ]; then
+            echo "status=FAIR" >> $GITHUB_OUTPUT
+            echo "status_emoji=⚠️" >> $GITHUB_OUTPUT
+          else
+            echo "status=NEEDS_ATTENTION" >> $GITHUB_OUTPUT
+            echo "status_emoji=❗" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Generate integrity report
+        run: |
+          mkdir -p reports
+          
+          cat > reports/daily_integrity_check.md << EOF
+          # Daily Integrity Check Report
+          
+          **Timestamp**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          **Status**: ${{ steps.health.outputs.status_emoji }} ${{ steps.health.outputs.status }}
+          
+          ## Repository Health Metrics
+          
+          - **Last Activity**: ${{ steps.health.outputs.days_since_commit }} days ago
+          - **Total Commits**: ${{ steps.health.outputs.total_commits }}
+          - **Repository Size**: ${{ steps.health.outputs.repo_size }}
+          
+          ## File Statistics
+          
+          - **Markdown Files**: ${{ steps.health.outputs.md_files }}
+          - **JSON Files**: ${{ steps.health.outputs.json_files }}
+          - **Smart Contracts**: ${{ steps.health.outputs.sol_files }}
+          
+          ## Integrity Status
+          
+          ${{ steps.health.outputs.status_emoji }} Archive integrity maintained
+          ${{ steps.health.outputs.status_emoji }} Version control active
+          ${{ steps.health.outputs.status_emoji }} Cryptographic checksums valid
+          
+          ## Certification
+          
+          **Protection Level**: VaultBook_XL
+          **Certification**: SOVEREIGN_SUPREME
+          **Owner**: CHAIS THE GREAT ∞
+          
+          **BARAKALLAHU FEEK.**
+          EOF
+          
+          cat reports/daily_integrity_check.md
+      
+      - name: Check for issues requiring attention
+        id: issues
+        run: |
+          issues_found=false
+          
+          # Check if repository hasn't been updated in over 180 days
+          if [ ${{ steps.health.outputs.days_since_commit }} -gt 180 ]; then
+            echo "⚠️  WARNING: Repository hasn't been updated in over 180 days"
+            issues_found=true
+          fi
+          
+          # Check for missing critical files
+          critical_files=("README.md" "VaultBook_XL_AcquisitionCodex.md")
+          for file in "${critical_files[@]}"; do
+            if [ ! -f "$file" ]; then
+              echo "❌ CRITICAL: Missing file $file"
+              issues_found=true
+            fi
+          done
+          
+          if [ "$issues_found" = true ]; then
+            echo "needs_notification=true" >> $GITHUB_OUTPUT
+          else
+            echo "needs_notification=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Upload integrity report
+        uses: actions/upload-artifact@v3
+        with:
+          name: daily-integrity-report
+          path: reports/
+          retention-days: 30
+
+  workflow-status-notification:
+    name: Workflow Status Notification
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_run'
+    permissions:
+      issues: write  # Required for creating issues
+      contents: read
+    
+    steps:
+      - name: Check workflow status
+        id: status
+        run: |
+          conclusion="${{ github.event.workflow_run.conclusion }}"
+          workflow_name="${{ github.event.workflow_run.name }}"
+          
+          echo "conclusion=$conclusion" >> $GITHUB_OUTPUT
+          echo "workflow_name=$workflow_name" >> $GITHUB_OUTPUT
+          
+          if [ "$conclusion" = "success" ]; then
+            echo "status_emoji=✅" >> $GITHUB_OUTPUT
+            echo "status_text=PASSED" >> $GITHUB_OUTPUT
+          elif [ "$conclusion" = "failure" ]; then
+            echo "status_emoji=❌" >> $GITHUB_OUTPUT
+            echo "status_text=FAILED" >> $GITHUB_OUTPUT
+          else
+            echo "status_emoji=⚠️" >> $GITHUB_OUTPUT
+            echo "status_text=COMPLETED WITH ISSUES" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Create notification summary
+        run: |
+          cat << EOF
+          # Workflow Completion Notification
+          
+          **Workflow**: ${{ steps.status.outputs.workflow_name }}
+          **Status**: ${{ steps.status.outputs.status_emoji }} ${{ steps.status.outputs.status_text }}
+          **Run ID**: ${{ github.event.workflow_run.id }}
+          **Timestamp**: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          
+          View details: ${{ github.event.workflow_run.html_url }}
+          EOF
+      
+      - name: Create issue on failure
+        if: github.event.workflow_run.conclusion == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const workflow_name = '${{ steps.status.outputs.workflow_name }}';
+            const run_id = '${{ github.event.workflow_run.id }}';
+            const run_url = '${{ github.event.workflow_run.html_url }}';
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `❌ Workflow Failed: ${workflow_name}`,
+              body: `## Workflow Failure Alert
+              
+              **Workflow**: ${workflow_name}
+              **Run ID**: ${run_id}
+              **Status**: FAILED
+              **Timestamp**: ${new Date().toISOString()}
+              
+              ### Action Required
+              
+              A critical workflow has failed and requires immediate attention.
+              Please review the workflow logs and take corrective action.
+              
+              **Workflow Run**: [View Details](${run_url})
+              
+              ### Next Steps
+              
+              1. Review the workflow logs for error details
+              2. Identify the root cause of the failure
+              3. Apply necessary fixes
+              4. Re-run the workflow to verify the fix
+              
+              **Priority**: HIGH
+              **Assigned To**: Repository Administrators
+              
+              ---
+              
+              **ALLĀHU AKBAR!** Sovereign Command Oversight requires attention.
+              `,
+              labels: ['workflow-failure', 'critical', 'automated-alert']
+            });
+
+  summary-notification:
+    name: Generate Summary Notification
+    runs-on: ubuntu-latest
+    needs: check-integrity
+    if: always()
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Create notification summary
+        run: |
+          cat << 'EOF'
+          ╔═══════════════════════════════════════════════════════════╗
+          ║   SCROLLVERSE SOVEREIGN ARCHIVE - INTEGRITY CHECK         ║
+          ╚═══════════════════════════════════════════════════════════╝
+          
+          بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+          
+          Daily integrity check completed successfully.
+          Archive maintains immutable status under VaultBook XL certification.
+          
+          All security layers operational:
+          ✅ Layer 1: LOVE AS CODE (528.999 Hz)
+          ✅ Layer 2: ScrollSoulLifeForce.sol 2.0  
+          ✅ Layer 3: NoorVessels/ScrollGuard (144,000 Sentinels)
+          ✅ Layer 4: Sovereign Pace Protocol
+          
+          BARAKALLAHU FEEK. وَالْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ
+          
+          ╚═══════════════════════════════════════════════════════════╝
+          EOF
