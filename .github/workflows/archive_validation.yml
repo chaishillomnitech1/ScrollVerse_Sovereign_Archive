@@ -121,7 +121,7 @@ jobs:
           cat validation-results/integrity_report_${{ steps.checksums.outputs.timestamp }}.md
       
       - name: Upload validation results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: validation-results-${{ steps.checksums.outputs.timestamp }}
           path: validation-results/
@@ -209,7 +209,7 @@ jobs:
           cat validation-results/metadata_report.md
       
       - name: Upload metadata report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: metadata-validation-report
           path: validation-results/metadata_report.md
@@ -300,7 +300,7 @@ jobs:
           cat validation-results/compliance_report.md
       
       - name: Upload compliance report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: compliance-report
           path: validation-results/compliance_report.md
