@@ -112,7 +112,7 @@ jobs:
       - name: Upload repository metrics
         uses: actions/upload-artifact@v4
         with:
-          name: audit-results-${{ needs.audit-preparation.outputs.audit_id }}
+          name: audit-results-${{ needs.audit-preparation.outputs.audit_id }}-repository
           path: audit-results/
           retention-days: 365
 
@@ -245,7 +245,7 @@ jobs:
       - name: Upload security report
         uses: actions/upload-artifact@v4
         with:
-          name: audit-results-${{ needs.audit-preparation.outputs.audit_id }}
+          name: audit-results-${{ needs.audit-preparation.outputs.audit_id }}-security
           path: audit-results/
           retention-days: 365
 
@@ -379,7 +379,7 @@ jobs:
       - name: Upload compliance report
         uses: actions/upload-artifact@v4
         with:
-          name: audit-results-${{ needs.audit-preparation.outputs.audit_id }}
+          name: audit-results-${{ needs.audit-preparation.outputs.audit_id }}-compliance
           path: audit-results/
           retention-days: 365
 
@@ -398,7 +398,8 @@ jobs:
       - name: Download all audit results
         uses: actions/download-artifact@v4
         with:
-          name: audit-results-${{ needs.audit-preparation.outputs.audit_id }}
+          pattern: audit-results-${{ needs.audit-preparation.outputs.audit_id }}-*
+          merge-multiple: true
           path: audit-results/
       
       - name: Create comprehensive audit report
